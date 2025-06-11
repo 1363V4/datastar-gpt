@@ -1,0 +1,13 @@
+[project]
+name = "datastar-gpt"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "dotenv>=0.9.9",
+    "httpx>=0.28.1",
+    "markdown2>=2.5.3",
+    "quart>=0.20.0",
+    "requests>=2.32.3",
+]

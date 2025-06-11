@@ -1,0 +1,138 @@
+@import url('gold.css');
+@import url('https://fonts.googleapis.com/css2?family=National+Park&family=Sigmar+One&display=swap');
+
+
+:root {
+    
+}
+
+:root:has(main[pnj]) {
+    --primary: #b5d6cc;
+    --secondary: #dfc07b;
+    --bg-primary: #9dbe9c;
+    --bg-secondary: #80caa6;
+    --bg-2: hsl(from var(--bg-secondary) h s 60);
+    --bg-3: hsl(from var(--bg-secondary) h s 70);
+}
+
+:root:has(main[ceo]) {
+    --primary:  #dfc07b;
+    --secondary: #b5d6cc;
+    --bg-primary: #80caa6;
+    --bg-secondary: #9dbe9c;
+    --bg-2: hsl(from var(--bg-secondary) h s 60);
+    --bg-3: hsl(from var(--bg-secondary) h s 70);
+}
+
+html {
+    font-size: 1.5rem;
+    font-family: "National Park", sans-serif;
+    font-optical-sizing: auto;
+}
+
+body {
+    color: midnightblue;
+    background: linear-gradient(45deg, var(--bg-primary), var(--bg-secondary));
+    background-size: 400% 400%;
+    animation: animateBackground 10s ease infinite;
+}
+
+@keyframes animateBackground {
+    50% { background-position: 100% 100%; }
+}
+
+.material-icons {
+    font-size: unset !important;
+    vertical-align: middle;
+}
+
+/* components */
+
+main {
+    display: grid;
+    width: 80vw;
+    max-width: 50rem;
+    height: 100svh;
+    grid-template-rows: 1fr auto;
+    overflow-y: hidden;
+}
+
+#answer {
+    display: grid;
+    gap: .5rem;
+    overflow-y: auto;
+    margin: .5rem;
+    padding: .5rem;
+    background: var(--secondary);
+    border: 5px solid var(--primary);
+    border-radius: 1.5rem;
+
+    &::-webkit-scrollbar {
+        display: none;
+    }
+
+    div {
+        font-size: 1rem;
+        width: fit-content;
+        height: fit-content;
+        padding: .5rem;
+        border-radius: 1rem;
+        &[system] {
+            display: none;
+        }
+        &[user] {
+            background: var(--bg-2);
+            justify-self: flex-end;
+            margin-left: 1rem;
+        }
+        &[assistant] {
+            display: grid;
+            gap: .5rem;
+            background: var(--bg-3);
+            margin-right: 1rem;
+        }
+        &:hover {
+            filter: drop-shadow(0px 0px 2px white);
+        }
+    }
+}
+
+#chatbar {
+    display: grid;
+    grid-template-columns: 10rem 1fr;
+    gap: 1rem;
+    justify-items: stretch;
+    padding-inline: .5rem;
+    overflow: hidden;
+}
+
+input {
+    background: var(--secondary);
+    width: -webkit-fill-available;
+    padding: .5rem;
+    border: 5px solid var(--primary);
+    border-radius: 1rem;
+}
+
+#wp-icon {
+    height: 10rem;
+    width: 10rem;
+    border: 10px solid var(--secondary);
+    border-radius: 50%;
+    padding: .2rem;
+    cursor: pointer;
+    filter: drop-shadow(2px 2px 6px var(--secondary));
+    backdrop-filter: brightness(.9);
+    animation: bg-animate 6s infinite linear;
+    &:hover {
+        filter: drop-shadow(-2px -2px 6px var(--primary));
+    }
+}
+
+@keyframes bg-animate {
+    50% {backdrop-filter: brightness(.8);}
+}
+
+#answer, input {
+    filter: drop-shadow(2px 2px 2px black);
+}
