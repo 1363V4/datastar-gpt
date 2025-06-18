@@ -170,5 +170,5 @@ async def switch(char):
     conversation_history[0] = {'role': "system", 'content': instructions[char]}
     return DatastarResponse(SSE.merge_fragments(fragments=main_view(conversation_history, "ready", char)))
 
-if __name__ == '__main__':
-    app.run(debug=True)
+# if __name__ == '__main__':
+#     app.run(debug=True)
