@@ -131,7 +131,7 @@ async def ask_gpt(question):
 @app.before_request
 async def before_request():
     if not session.get('char'): 
-        session['char'] = "pnj"
+        session['char'] = "ceo"
 
 @app.get('/')
 async def index():
