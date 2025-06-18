@@ -1,13 +1,13 @@
 from quart import Quart, render_template, request, session, escape, stream_with_context
 from datastar_py.quart import DatastarResponse
 from datastar_py import ServerSentEventGenerator as SSE
-from tinydb import TinyDB, where
+
 import os
 import json
 import asyncio
 from dotenv import load_dotenv
 from dataclasses import dataclass
-import uuid
+
 import httpx
 import markdown2
 
@@ -18,10 +18,6 @@ load_dotenv()
 
 app = Quart(__name__)
 app.config['SECRET_KEY'] = os.getenv('QUART_SECRET_KEY')
-
-# Initialize TinyDB
-db = TinyDB("data.json", sort_keys=True, indent=4)
-chats_table = db.table('chats')
 
 @dataclass
 class Parameters:
@@ -47,26 +43,11 @@ instructions = {
     'cul': "You're a scary cultist from Ch'thuluh. You respond with cursed text, ů̶͔s̵̲̕ĭ̶͚n̵̯̚g̷͎͠ ̶̭́s̷͙̑p̶̝̐e̸̛̪c̵͎̐ị̴̀â̶̹l̶͍̀ ̸͈̈́g̶̯̏l̴̢̆ÿ̵͙́p̴̫̀h̴̳͂s̷̤̕ ̵̞͝l̴̨̕i̵̱̍ḵ̷͐è̵̗ ̶͉̂t̷͈͑h̵̬̓a̵̹͆t̵̢͂,",
 }
 
-def get_conversation_history(chat_id):
-    chat = chats_table.get(where('id') == chat_id)
-    if not chat:
-        return []
-    return chat.get('messages', [])
+conversation_history = []
 
-def add_to_conversation(chat_id, role, content):
-    chat = chats_table.get(where('id') == chat_id)
-    if not chat:
-        chat = {
-            'id': chat_id,
-            'messages': [],
-            'character': session.get('char', 'ceo')
-        }
-        chats_table.insert(chat)
-    
-    messages = chat['messages']
-    messages.append({"role": role, "content": content})
-    chats_table.update({'messages': messages}, where('id') == chat_id)
-    return messages
+def add_to_conversation(role, content):
+    conversation_history.append({"role": role, "content": content})
+    return conversation_history
 
 def main_view(conversation, status, char):
     if status == "ready": 
@@ -116,13 +97,13 @@ def main_view(conversation, status, char):
 
 # UTILS
 
-async def ask_gpt(question, chat_id):
+async def ask_gpt(question):
     headers = {
         "Authorization": parameters.key,
         "Content-Type": "application/json"
     }
     
-    conversation = add_to_conversation(chat_id, "user", question)
+    conversation = add_to_conversation("user", question)
     
     data = {
         "messages": conversation,
@@ -134,7 +115,7 @@ async def ask_gpt(question, chat_id):
     async with httpx.AsyncClient() as client:
         async with client.stream('POST', parameters.url, headers=headers, json=data) as response:
             if response.status_code == 200:
-                add_to_conversation(chat_id, "assistant", "")
+                conversation_history.append({"role": "assistant", "content": ""})
                 async for line in response.aiter_lines():
                     if line.startswith('data: '):
                         try:
@@ -143,9 +124,7 @@ async def ask_gpt(question, chat_id):
                                 delta = json_data['choices'][0].get('delta', {})
                                 if 'content' in delta:
                                     content = delta['content']
-                                    messages = get_conversation_history(chat_id)
-                                    messages[-1]["content"] += content
-                                    chats_table.update({'messages': messages}, where('id') == chat_id)
+                                    conversation_history[-1]["content"] += content
                         except json.JSONDecodeError:
                             continue
 
@@ -155,22 +134,18 @@ async def ask_gpt(question, chat_id):
 async def before_request():
     if not session.get('char'): 
         session['char'] = "ceo"
-    if not session.get('chat_id'):
-        session['chat_id'] = str(uuid.uuid4())
 
 @app.get('/')
 async def index():
-    session['chat_id'] = str(uuid.uuid4())
+    global conversation_history
+    conversation_history = []
     return await render_template('index.html')
 
 @app.get('/load')
 async def load():
     current_char = session['char']
-    chat_id = session['chat_id']
-    conversation_history = get_conversation_history(chat_id)
-    if not conversation_history:
-        add_to_conversation(chat_id, "system", instructions[current_char])
-        conversation_history = get_conversation_history(chat_id)
+    global conversation_history
+    conversation_history.append({'role': "system", 'content': instructions[current_char]})
     return DatastarResponse(SSE.merge_fragments(fragments=main_view(conversation_history, "ready", current_char)))
 
 @app.post("/message")
@@ -179,15 +154,14 @@ async def post_message():
     async def event():
         question = (await request.form).get('question')
         question = escape(question)
-        current_char = session.get('char', "pnj")
-        chat_id = session['chat_id']
-        ask_gpt_coroutine = asyncio.create_task(ask_gpt(question, chat_id))
+        current_char = session.get('char', "pnj")        
+        ask_gpt_coroutine = asyncio.create_task(ask_gpt(question))
 
         while not ask_gpt_coroutine.done():
-            yield SSE.merge_fragments(fragments=main_view(get_conversation_history(chat_id), "running", current_char))
+            yield SSE.merge_fragments(fragments=main_view(conversation_history, "running", current_char))
             await asyncio.sleep(.01)
         
-        yield SSE.merge_fragments(fragments=main_view(get_conversation_history(chat_id), "ready", current_char))
+        yield SSE.merge_fragments(fragments=main_view(conversation_history, "ready", current_char))
     return DatastarResponse(event())
 
 @app.post("/switch/<char>")
@@ -196,12 +170,9 @@ async def switch(char):
         return DatastarResponse()
     
     session['char'] = char
-    chat_id = session['chat_id']
-    conversation_history = get_conversation_history(chat_id)
-    if conversation_history:
-        conversation_history[0] = {'role': "system", 'content': instructions[char]}
-        chats_table.update({'messages': conversation_history, 'character': char}, where('id') == chat_id)
+    global conversation_history
+    conversation_history[0] = {'role': "system", 'content': instructions[char]}
     return DatastarResponse(SSE.merge_fragments(fragments=main_view(conversation_history, "ready", char)))
 
-if __name__ == '__main__':
-    app.run(debug=True)
+# if __name__ == '__main__':
+#     app.run(debug=True)
