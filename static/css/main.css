@@ -3,10 +3,10 @@
 
 
 :root {
-    --primary: #f5d6b3;
-    --secondary: #e6b17a;
-    --bg-primary: #f8c8a9;
-    --bg-secondary: #e6a17a;
+    --primary: #ffffff;
+    --secondary: #cccccc;
+    --bg-primary: #666666;
+    --bg-secondary: #333333;
     --bg-2: hsl(from var(--bg-secondary) h s 60);
     --bg-3: hsl(from var(--bg-secondary) h s 70);
 
@@ -33,6 +33,32 @@
         --secondary: #e6b17a;
         --bg-primary: #f8c8a9;
         --bg-secondary: #e6a17a;
+        --bg-2: hsl(from var(--bg-secondary) h s 60);
+        --bg-3: hsl(from var(--bg-secondary) h s 70);
+    }
+
+    &:has(main[ben]) {
+        --primary: #a8c4d9;
+        --secondary: #7ba4c0;
+        --bg-primary: #5b8aa8;
+        --bg-secondary: #3d6b8a;
+        --bg-2: hsl(from var(--bg-secondary) h s 60);
+        --bg-3: hsl(from var(--bg-secondary) h s 70);
+    }
+
+    &:has(main[cat]) {
+        --primary: #ffffff;
+        --secondary: #cccccc;
+        --bg-primary: #666666;
+        --bg-secondary: #333333;
+        --bg-2: hsl(from var(--bg-secondary) h s 60);
+        --bg-3: hsl(from var(--bg-secondary) h s 70);
+    }
+    &:has(main[cul]) {
+        --primary: #e6e6fa;
+        --secondary: #d8bfd8;
+        --bg-primary: #9370db;
+        --bg-secondary: #8a2be2;
         --bg-2: hsl(from var(--bg-secondary) h s 60);
         --bg-3: hsl(from var(--bg-secondary) h s 70);
     }
@@ -160,8 +186,9 @@ input {
 
 .char-grid {
     display: grid;
-    grid-auto-flow: column;
+    grid-template-columns: repeat(auto-fill, 8rem);
     gap: 2rem;
+    padding-inline: 1rem;
     width: 100%;
 }
 
