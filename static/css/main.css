@@ -46,6 +46,15 @@
         --bg-3: hsl(from var(--bg-secondary) h s 70);
     }
 
+    &:has(main[guy]) {
+        --primary: #ffeb99;
+        --secondary: #ffd700;
+        --bg-primary: #ffd54f;
+        --bg-secondary: #ffc107;
+        --bg-2: hsl(from var(--bg-secondary) h s 60);
+        --bg-3: hsl(from var(--bg-secondary) h s 70);
+    }
+
     &:has(main[cat]) {
         --primary: #ffffff;
         --secondary: #cccccc;
