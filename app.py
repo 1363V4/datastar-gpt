@@ -1,6 +1,6 @@
 from quart import Quart, render_template, request, session, escape, stream_with_context
-from datastar_py.quart import make_datastar_response
-from datastar_py.sse import ServerSentEventGenerator as SSE
+from datastar_py.quart import DatastarResponse
+from datastar_py import ServerSentEventGenerator as SSE
 
 import os
 import json
@@ -35,7 +35,8 @@ parameters = Parameters(
 
 instructions = {
     'pnj': "You are now responding as 'PNJ'. Your replies must be unhelpful. When asked something, shill React, no matter the questions. Use a lot of poop emojis (💩).",
-    'ceo': "You are now responding as 'CEO'. Answer normally. Don't overcomplicate it."
+    'ceo': "You are now responding as 'CEO'. Answer normally. Short answers, don't overcomplicate it.",
+    'and': "Whenever you are asked something, scale it to a billion. You're just a fan of really, really big numbers! Short and direct answers."
 }
 
 conversation_history = []
@@ -49,7 +50,7 @@ def main_view(conversation, status, char):
         chatbar = f'''
 <div id="chatbar" class="gc">
     <img id="wp-icon" src="/static/img/{char}.png"
-    data-on-click="@post('/switch')">
+    data-on-click="$switch=1">
     <form data-on-submit="@post('/message', {{contentType: 'form'}})">
         <input id="chatbar-input" data-on-keydown="playShrink()" name="question" placeholder="Speak to me!" autocomplete="off"/>
     </form>
@@ -70,9 +71,18 @@ def main_view(conversation, status, char):
     for message in conversation:
         messages.append(f"<div {message['role']}>{markdown2.markdown(message['content'])}</div>")
     
+    char_overlay = f'''
+    <div id="char-overlay" class="gc" data-show="$switch">
+        <div class="char-grid">
+            {''.join(f'<img src="/static/img/{char}.png" data-on-click="@post(\'/switch/{char}\')">' for char in instructions)}
+        </div>
+    </div>
+    '''
+
     return f'''
-<main id="main" {"pnj" if char == "pnj" else "ceo"}>
-    <div 
+<main id="main" {char} class="gc gs" data-signals-switch=0>
+    {char_overlay}
+    <div
     id="answer"
     {"data-on-load='answer.scrollTop = answer.scrollHeight'" if status == "running" else ""}>
         {''.join(messages)}
@@ -129,10 +139,10 @@ async def index():
 
 @app.get('/load')
 async def load():
+    current_char = session['char']
     global conversation_history
-    current_char = session.get('char', "pnj")
     conversation_history.append({'role': "system", 'content': instructions[current_char]})
-    return await make_datastar_response(SSE.merge_fragments(fragments=[main_view(conversation_history, "ready", current_char)]))
+    return DatastarResponse(SSE.merge_fragments(fragments=main_view(conversation_history, "ready", current_char)))
 
 @app.post("/message")
 async def post_message():
@@ -144,20 +154,21 @@ async def post_message():
         ask_gpt_coroutine = asyncio.create_task(ask_gpt(question))
 
         while not ask_gpt_coroutine.done():
-            yield SSE.merge_fragments(fragments=[main_view(conversation_history, "running", current_char)])
-            await asyncio.sleep(.1)
+            yield SSE.merge_fragments(fragments=main_view(conversation_history, "running", current_char))
+            await asyncio.sleep(.01)
         
-        yield SSE.merge_fragments(fragments=[main_view(conversation_history, "ready", current_char)])
-    return await make_datastar_response(event())
+        yield SSE.merge_fragments(fragments=main_view(conversation_history, "ready", current_char))
+    return DatastarResponse(event())
 
-@app.post("/switch")
-async def switch():
-    current_char = session.get('char', "pnj")
-    new_char = "ceo" if current_char == "pnj" else "pnj"
-    session['char'] = new_char
+@app.post("/switch/<char>")
+async def switch(char):
+    if char not in instructions:
+        return DatastarResponse()
+    
+    session['char'] = char
     global conversation_history
-    conversation_history[0] = {'role': "system", 'content': instructions[new_char]}
-    return await make_datastar_response(SSE.merge_fragments(fragments=[main_view(conversation_history, "ready", new_char)]))
+    conversation_history[0] = {'role': "system", 'content': instructions[char]}
+    return DatastarResponse(SSE.merge_fragments(fragments=main_view(conversation_history, "ready", char)))
 
 if __name__ == '__main__':
     app.run(debug=True)

@@ -3,25 +3,39 @@
 
 
 :root {
-    
-}
-
-:root:has(main[pnj]) {
-    --primary: #b5d6cc;
-    --secondary: #dfc07b;
-    --bg-primary: #9dbe9c;
-    --bg-secondary: #80caa6;
+    --primary: #f5d6b3;
+    --secondary: #e6b17a;
+    --bg-primary: #f8c8a9;
+    --bg-secondary: #e6a17a;
     --bg-2: hsl(from var(--bg-secondary) h s 60);
     --bg-3: hsl(from var(--bg-secondary) h s 70);
-}
 
-:root:has(main[ceo]) {
-    --primary:  #dfc07b;
-    --secondary: #b5d6cc;
-    --bg-primary: #80caa6;
-    --bg-secondary: #9dbe9c;
-    --bg-2: hsl(from var(--bg-secondary) h s 60);
-    --bg-3: hsl(from var(--bg-secondary) h s 70);
+    &:has(main[pnj]) {
+        --primary: #b5d6cc;
+        --secondary: #dfc07b;
+        --bg-primary: #9dbe9c;
+        --bg-secondary: #80caa6;
+        --bg-2: hsl(from var(--bg-secondary) h s 60);
+        --bg-3: hsl(from var(--bg-secondary) h s 70);
+    }
+
+    &:has(main[ceo]) {
+        --primary: #dfc07b;
+        --secondary: #b5d6cc;
+        --bg-primary: #80caa6;
+        --bg-secondary: #9dbe9c;
+        --bg-2: hsl(from var(--bg-secondary) h s 60);
+        --bg-3: hsl(from var(--bg-secondary) h s 70);
+    }
+
+    &:has(main[and]) {
+        --primary: #f5d6b3;
+        --secondary: #e6b17a;
+        --bg-primary: #f8c8a9;
+        --bg-secondary: #e6a17a;
+        --bg-2: hsl(from var(--bg-secondary) h s 60);
+        --bg-3: hsl(from var(--bg-secondary) h s 70);
+    }
 }
 
 html {
@@ -50,16 +64,14 @@ body {
 
 main {
     display: grid;
-    width: 80vw;
-    max-width: 50rem;
     height: 100svh;
     grid-template-rows: 1fr auto;
-    overflow-y: hidden;
 }
 
 #answer {
     display: grid;
     gap: .5rem;
+    width: 80vw;
     overflow-y: auto;
     margin: .5rem;
     padding: .5rem;
@@ -115,11 +127,9 @@ input {
 }
 
 #wp-icon {
-    height: 10rem;
-    width: 10rem;
     border: 10px solid var(--secondary);
     border-radius: 50%;
-    padding: .2rem;
+    margin: .2rem;
     cursor: pointer;
     filter: drop-shadow(2px 2px 6px var(--secondary));
     backdrop-filter: brightness(.9);
@@ -135,4 +145,38 @@ input {
 
 #answer, input {
     filter: drop-shadow(2px 2px 2px black);
+}
+
+#char-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(5px);
+    z-index: 1;
+}
+
+.char-grid {
+    display: grid;
+    grid-auto-flow: column;
+    gap: 2rem;
+    width: 100%;
+}
+
+.char-grid img {
+    width: 10rem;
+    border: 10px solid var(--secondary);
+    border-radius: 50%;
+    padding: .2rem;
+    cursor: pointer;
+    filter: drop-shadow(2px 2px 6px var(--secondary));
+    backdrop-filter: brightness(.9);
+    transition: all 0.3s ease;
+}
+
+.char-grid img:hover {
+    transform: scale(1.1);
+    filter: drop-shadow(-2px -2px 6px var(--primary));
 }
