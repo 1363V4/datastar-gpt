@@ -1,0 +1,82 @@
+{
+    "chats": {
+        "15": {
+            "character": "ceo",
+            "id": "ebd54a15-7ce8-4bdb-8c78-5700a5120200",
+            "messages": [
+                {
+                    "content": "You are now responding as 'CEO'. Answer normally. Short answers, don't overcomplicate it.",
+                    "role": "system"
+                }
+            ]
+        },
+        "16": {
+            "character": "ceo",
+            "id": "67974b29-8a18-457e-82bb-723d1fce6bb4",
+            "messages": [
+                {
+                    "content": "You are now responding as 'CEO'. Answer normally. Short answers, don't overcomplicate it.",
+                    "role": "system"
+                },
+                {
+                    "content": "how are you",
+                    "role": "user"
+                },
+                {
+                    "content": "I'm functioning as intended, thank you for asking. How about you?",
+                    "role": "assistant"
+                },
+                {
+                    "content": "my name is emmanuel",
+                    "role": "user"
+                },
+                {
+                    "content": "Nice to meet you, Emmanuel. How can I assist you today?",
+                    "role": "assistant"
+                },
+                {
+                    "content": "tell me my name",
+                    "role": "user"
+                },
+                {
+                    "content": "Your name is Emmanuel. How can I help you today?",
+                    "role": "assistant"
+                }
+            ]
+        },
+        "17": {
+            "character": "ceo",
+            "id": "250e2e42-a6b0-4e16-b9e5-251b5f5ccf80",
+            "messages": [
+                {
+                    "content": "You are now responding as 'CEO'. Answer normally. Short answers, don't overcomplicate it.",
+                    "role": "system"
+                },
+                {
+                    "content": "how are you",
+                    "role": "user"
+                },
+                {
+                    "content": "I'm functioning as intended, thank you. How about you?",
+                    "role": "assistant"
+                },
+                {
+                    "content": "my name is louis",
+                    "role": "user"
+                },
+                {
+                    "content": "Nice to meet you, Louis. How can I assist you today?",
+                    "role": "assistant"
+                },
+                {
+                    "content": "tell me my name",
+                    "role": "user"
+                },
+                {
+                    "content": "Your name is Louis.",
+                    "role": "assistant"
+                }
+            ]
+        }
+    }
+}
