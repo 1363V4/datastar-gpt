@@ -5,12 +5,14 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "brotli-asgi>=1.4.0",
     "datastar-py>=0.5.0",
     "dotenv>=0.9.9",
     "httpx>=0.28.1",
     "hypercorn>=0.17.3",
     "markdown2>=2.5.3",
     "quart>=0.20.0",
+    "quart-rate-limiter>=0.12.0",
     "requests>=2.32.3",
     "tinydb>=4.8.2",
 ]

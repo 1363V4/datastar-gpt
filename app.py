@@ -1,13 +1,18 @@
 from quart import Quart, render_template, request, session, escape, stream_with_context
 from datastar_py.quart import DatastarResponse
 from datastar_py import ServerSentEventGenerator as SSE
-from tinydb import TinyDB, where
+
 import os
+import uuid
 import json
 import asyncio
-from dotenv import load_dotenv
+from datetime import timedelta
 from dataclasses import dataclass
-import uuid
+
+from quart_rate_limiter import RateLimiter, rate_limit
+from brotli_asgi import BrotliMiddleware
+from tinydb import TinyDB, where
+from dotenv import load_dotenv
 import httpx
 import markdown2
 
@@ -18,8 +23,9 @@ load_dotenv()
 
 app = Quart(__name__)
 app.config['SECRET_KEY'] = os.getenv('QUART_SECRET_KEY')
+app.asgi_app = BrotliMiddleware(app.asgi_app)
+rate_limiter = RateLimiter(app)
 
-# Initialize TinyDB
 db = TinyDB("data.json", sort_keys=True, indent=4)
 chats_table = db.table('chats')
 
@@ -95,11 +101,11 @@ def main_view(conversation, status, char):
         messages.append(f"<div {message['role']}>{markdown2.markdown(message['content'])}</div>")
     
     char_overlay = f'''
-    <div id="char-overlay" data-show="$switch">
-        <div class="char-grid gc">
-            {''.join(f'<img src="/static/img/{char}.png" data-on-click="@post(\'/switch/{char}\')">' for char in instructions)}
-        </div>
+<div id="char-overlay" data-show="$switch">
+    <div class="char-grid gc">
+        {''.join(f'<img src="/static/img/{char}.png" data-on-click="@post(\'/switch/{char}\')">' for char in instructions)}
     </div>
+</div>
     '''
 
     return f'''
@@ -174,6 +180,7 @@ async def load():
     return DatastarResponse(SSE.merge_fragments(fragments=main_view(conversation_history, "ready", current_char)))
 
 @app.post("/message")
+@rate_limit(1, timedelta(seconds=2))
 async def post_message():
     @stream_with_context
     async def event():

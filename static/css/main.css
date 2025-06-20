@@ -47,10 +47,10 @@
     }
 
     &:has(main[guy]) {
-        --primary: #ffeb99;
-        --secondary: #ffd700;
-        --bg-primary: #ffd54f;
-        --bg-secondary: #ffc107;
+        --primary: #ffd700;
+        --secondary: #ffeb99;
+        --bg-primary: #ffecb3;
+        --bg-secondary: #ffeb99;
         --bg-2: hsl(from var(--bg-secondary) h s 60);
         --bg-3: hsl(from var(--bg-secondary) h s 70);
     }
@@ -163,7 +163,7 @@ input {
 
 #wp-icon {
     max-height: 9rem;
-    border: 10px solid var(--secondary);
+    border: .2rem solid var(--secondary);
     border-radius: 50%;
     margin: .2rem;
     cursor: pointer;
@@ -215,7 +215,7 @@ input {
     cursor: pointer;
     filter: drop-shadow(2px 2px 6px var(--secondary));
     backdrop-filter: brightness(.9);
-    transition: all 0.3s ease;
+    transition: all 0.1s ease;
 }
 
 .char-grid img:hover {
