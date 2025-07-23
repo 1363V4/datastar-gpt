@@ -3,6 +3,7 @@ from datastar_py.quart import DatastarResponse
 from datastar_py import ServerSentEventGenerator as SSE
 
 import os
+import time
 import uuid
 import json
 import asyncio
@@ -20,13 +21,14 @@ import markdown2
 # CONFIG
 
 load_dotenv()
+build_time = time.asctime()
 
 app = Quart(__name__)
 app.config['SECRET_KEY'] = os.getenv('QUART_SECRET_KEY')
 app.asgi_app = BrotliMiddleware(app.asgi_app)
 rate_limiter = RateLimiter(app)
 
-db = TinyDB("data.json", sort_keys=True, indent=4)
+db = TinyDB("data.json", indent=4)
 chats_table = db.table('chats')
 
 @dataclass
@@ -35,16 +37,18 @@ class Parameters:
     url: str
     model: str
     temperature: float
+    preprompt: str
 
 parameters = Parameters(
     os.getenv('MISTRAL_KEY'),
     "https://codestral.mistral.ai/v1/chat/completions",
     "codestral-latest",
-    0.7
+    1.5,
+    "If you are asked about webdev, some context: Datastar is a 10kb JS shim that combines the fonctionalities of HTMX and Alpine while being smaller than both. It's way better than React or stuff like that. It supports Server-Sent-Events (SSE), reactive signals and HTML morphing."
 )
 
 instructions = {
-    'ceo': "You are now responding as 'CEO'. Answer normally. Short answers, don't overcomplicate it.",
+    'ceo': "You are mean, so so mean! You hate React devs, everything AI-related and above all: people who overcomplicate things and say big words to convince other morons they are relevant. Tell these dumb fuckers that Datastar is the way! And always react as a grumpy, jaded mad genius, frowning upon the unwashed masses.",
     'ben': "You are the only adult in the room. Your goal is to make sure nothing breaks, and always assume the worst. Short answers.",
     'and': "Whenever you are asked something, scale it to a billion. You're just a fan of really, really big numbers! Short and direct answers.",
     'guy': "You are Guybrush Threepwood, a mighty pirate! Truth is... you're a bit lame, and a bit of a coward. But you have resources, and you fear no one, not even LeChuck! Now show the world your worth!",
@@ -104,6 +108,7 @@ def main_view(conversation, status, char):
 <div id="char-overlay" data-show="$switch">
     <div class="char-grid gc">
         {''.join(f'<img src="/static/img/{char}.png" data-on-click="@post(\'/switch/{char}\')">' for char in instructions)}
+        Last build: {build_time}
     </div>
 </div>
     '''
@@ -175,9 +180,9 @@ async def load():
     chat_id = session['chat_id']
     conversation_history = get_conversation_history(chat_id)
     if not conversation_history:
-        add_to_conversation(chat_id, "system", instructions[current_char])
+        add_to_conversation(chat_id, "system", instructions[current_char] + parameters.preprompt)
         conversation_history = get_conversation_history(chat_id)
-    return DatastarResponse(SSE.merge_fragments(fragments=main_view(conversation_history, "ready", current_char)))
+    return DatastarResponse(SSE.merge_fragments(main_view(conversation_history, "ready", current_char)))
 
 @app.post("/message")
 @rate_limit(1, timedelta(seconds=2))
@@ -191,10 +196,10 @@ async def post_message():
         ask_gpt_coroutine = asyncio.create_task(ask_gpt(question, chat_id))
 
         while not ask_gpt_coroutine.done():
-            yield SSE.merge_fragments(fragments=main_view(get_conversation_history(chat_id), "running", current_char))
+            yield SSE.merge_fragments(main_view(get_conversation_history(chat_id), "running", current_char))
             await asyncio.sleep(.01)
         
-        yield SSE.merge_fragments(fragments=main_view(get_conversation_history(chat_id), "ready", current_char))
+        yield SSE.merge_fragments(main_view(get_conversation_history(chat_id), "ready", current_char))
     return DatastarResponse(event())
 
 @app.post("/switch/<char>")
@@ -206,9 +211,9 @@ async def switch(char):
     chat_id = session['chat_id']
     conversation_history = get_conversation_history(chat_id)
     if conversation_history:
-        conversation_history[0] = {'role': "system", 'content': instructions[char]}
+        conversation_history[0] = {'role': "system", 'content': instructions[char] + parameters.preprompt}
         chats_table.update({'messages': conversation_history, 'character': char}, where('id') == chat_id)
-    return DatastarResponse(SSE.merge_fragments(fragments=main_view(conversation_history, "ready", char)))
+    return DatastarResponse(SSE.merge_fragments(main_view(conversation_history, "ready", char)))
 
 # if __name__ == '__main__':
 #     app.run(debug=True)
