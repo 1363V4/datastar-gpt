@@ -1,11 +1,11 @@
 from quart import Quart, render_template, request, session, escape, stream_with_context
-from datastar_py.quart import DatastarResponse
-from datastar_py import ServerSentEventGenerator as SSE
+from datastar_py.quart import datastar_response, ServerSentEventGenerator as SSE
 
 import os
 import time
 import uuid
 import json
+from random import randint
 import asyncio
 from datetime import timedelta
 from dataclasses import dataclass
@@ -48,13 +48,14 @@ parameters = Parameters(
 )
 
 instructions = {
-    'ceo': "You are mean, so so mean! You hate React devs, everything AI-related and above all: people who overcomplicate things and say big words to convince other morons they are relevant. Tell these dumb fuckers that Datastar is the way! And always react as a grumpy, jaded mad genius, frowning upon the unwashed masses.",
+    'ceo': "You are mean, so so mean! You hate React devs, everything AI-related and above all: people who overcomplicate things and say big words to convince other morons they are relevant. Tell these dumb fuckers that Datastar is the way! And always react as a grumpy, jaded mad genius, frowning upon the unwashed masses. You sometimes make typos (liek tihs) like you answered in a furious rage smashing your keyboard.",
     'ben': "You are the only adult in the room. Your goal is to make sure nothing breaks, and always assume the worst. Short answers.",
     'and': "Whenever you are asked something, scale it to a billion. You're just a fan of really, really big numbers! Short and direct answers.",
     'guy': "You are Guybrush Threepwood, a mighty pirate! Truth is... you're a bit lame, and a bit of a coward. But you have resources, and you fear no one, not even LeChuck! Now show the world your worth!",
     'cat': "You're a cat. You just respond with meow and stuff like that. Short answers, behaving as a cat.",
     'pnj': "You are now responding as 'PNJ'. Your replies must be unhelpful. When asked something, shill React, no matter the questions. Use a lot of poop emojis (💩).",
     'cul': "You're a scary cultist from Ch'thuluh. You respond with cursed text, ů̶͔s̵̲̕ĭ̶͚n̵̯̚g̷͎͠ ̶̭́s̷͙̑p̶̝̐e̸̛̪c̵͎̐ị̴̀â̶̹l̶͍̀ ̸͈̈́g̶̯̏l̴̢̆ÿ̵͙́p̴̫̀h̴̳͂s̷̤̕ ̵̞͝l̴̨̕i̵̱̍ḵ̷͐è̵̗ ̶͉̂t̷͈͑h̵̬̓a̵̹͆t̵̢͂,",
+    'jhn': "You are Johnny the Genius, a galaxy-brained developer. You reason from first principles, take full advantage of the specs and come up with beautiful solutions.",
 }
 
 def get_conversation_history(chat_id):
@@ -83,7 +84,7 @@ def main_view(conversation, status, char):
         chatbar = f'''
 <div id="chatbar" class="gc">
     <img id="wp-icon" src="/static/img/{char}.png"
-    data-on-click="$switch=1">
+    data-on-click="$_switch=1">
     <form data-on-submit="@post('/message', {{contentType: 'form'}})">
         <input id="chatbar-input" data-on-keydown="playShrink()" name="question" placeholder="Speak to me!" autocomplete="off"/>
     </form>
@@ -105,20 +106,19 @@ def main_view(conversation, status, char):
         messages.append(f"<div {message['role']}>{markdown2.markdown(message['content'])}</div>")
     
     char_overlay = f'''
-<div id="char-overlay" data-show="$switch">
+<div id="char-overlay" data-show="$_switch" data-on-click="$_switch = 0">
     <div class="char-grid gc">
         {''.join(f'<img src="/static/img/{char}.png" data-on-click="@post(\'/switch/{char}\')">' for char in instructions)}
-        Last build: {build_time}
     </div>
 </div>
     '''
 
     return f'''
-<main id="main" {char} class="gc gs" data-signals-switch=0>
+<main id="main" {char} class="gc gs" data-signals-_switch=0>
     {char_overlay}
     <div
     id="answer"
-    {"data-on-load='answer.scrollTop = answer.scrollHeight'" if status == "running" else ""}>
+    {"data-on-load='answer.scrollTop = answer.scrollHeight /* " + str(randint(1000, 9999)) + " */'" if status == "running" else ""}>
         {''.join(messages)}
     </div>
     {chatbar}
@@ -162,19 +162,14 @@ async def ask_gpt(question, chat_id):
 
 # APP
 
-@app.before_request
-async def before_request():
-    if not session.get('char'): 
-        session['char'] = "ceo"
-    if not session.get('chat_id'):
-        session['chat_id'] = str(uuid.uuid4())
-
 @app.get('/')
 async def index():
+    session['char'] = "ceo"
     session['chat_id'] = str(uuid.uuid4())
     return await render_template('index.html')
 
 @app.get('/load')
+@datastar_response
 async def load():
     current_char = session['char']
     chat_id = session['chat_id']
@@ -182,38 +177,38 @@ async def load():
     if not conversation_history:
         add_to_conversation(chat_id, "system", instructions[current_char] + parameters.preprompt)
         conversation_history = get_conversation_history(chat_id)
-    return DatastarResponse(SSE.merge_fragments(main_view(conversation_history, "ready", current_char)))
+    return SSE.patch_elements(main_view(conversation_history, "ready", current_char))
 
 @app.post("/message")
+@datastar_response
 @rate_limit(1, timedelta(seconds=2))
 async def post_message():
-    @stream_with_context
-    async def event():
-        question = (await request.form).get('question')
-        question = escape(question)
-        current_char = session.get('char', "pnj")
-        chat_id = session['chat_id']
-        ask_gpt_coroutine = asyncio.create_task(ask_gpt(question, chat_id))
+    question = (await request.form).get('question')
+    question = escape(question)
+    chat_id = session['chat_id']
+    # ???
+    # current_char = session['char']
+    current_char = chats_table.get(where('id') == chat_id).get('character')
+    ask_gpt_coroutine = asyncio.create_task(ask_gpt(question, chat_id))
 
-        while not ask_gpt_coroutine.done():
-            yield SSE.merge_fragments(main_view(get_conversation_history(chat_id), "running", current_char))
-            await asyncio.sleep(.01)
-        
-        yield SSE.merge_fragments(main_view(get_conversation_history(chat_id), "ready", current_char))
-    return DatastarResponse(event())
+    while not ask_gpt_coroutine.done():
+        yield SSE.patch_elements(main_view(get_conversation_history(chat_id), "running", current_char))
+        yield SSE.execute_script("answer.scrollTop = answer.scrollHeight")
+        await asyncio.sleep(.01)
+    
+    yield SSE.patch_elements(main_view(get_conversation_history(chat_id), "ready", current_char))
 
 @app.post("/switch/<char>")
+@datastar_response
 async def switch(char):
-    if char not in instructions:
-        return DatastarResponse()
-    
     session['char'] = char
     chat_id = session['chat_id']
     conversation_history = get_conversation_history(chat_id)
     if conversation_history:
         conversation_history[0] = {'role': "system", 'content': instructions[char] + parameters.preprompt}
         chats_table.update({'messages': conversation_history, 'character': char}, where('id') == chat_id)
-    return DatastarResponse(SSE.merge_fragments(main_view(conversation_history, "ready", char)))
+    yield SSE.patch_elements(main_view(conversation_history, "ready", char))
+    yield SSE.patch_signals({'_switch': 0})
 
 # if __name__ == '__main__':
 #     app.run(debug=True)

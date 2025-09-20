@@ -71,6 +71,14 @@
         --bg-2: hsl(from var(--bg-secondary) h s 60);
         --bg-3: hsl(from var(--bg-secondary) h s 70);
     }
+    &:has(main[jhn]) {
+        --primary: #ff9494;
+        --secondary: #ffe0e0;
+        --bg-primary: #ffffff;
+        --bg-secondary: #EBF5FC;
+        --bg-2: hsl(from var(--bg-secondary) h s 80);
+        --bg-3: hsl(from var(--bg-secondary) h s 90);
+    }
 }
 
 html {
@@ -87,7 +95,7 @@ body {
 }
 
 @keyframes animateBackground {
-    50% { background-position: 100% 100%; }
+    50% { background-size: 100% 100%; }
 }
 
 .material-icons {
@@ -99,21 +107,23 @@ body {
 
 main {
     display: grid;
-    height: 100svh;
+    height: 100dvh;
     grid-template-rows: 1fr auto;
 }
 
 #answer {
     display: grid;
     gap: .5rem;
-    width: 80vw;
     overflow-y: auto;
     margin: .5rem;
     padding: .5rem;
     background: var(--secondary);
     border: 5px solid var(--primary);
     border-radius: 1.5rem;
-
+    
+    @media (min-width: 768px) {
+        width: 80vw;
+    }
     &::-webkit-scrollbar {
         display: none;
     }
@@ -147,10 +157,13 @@ main {
 #chatbar {
     display: grid;
     grid-template-columns: auto 1fr;
-    gap: 1rem;
     justify-items: stretch;
     padding-inline: .5rem;
     overflow: hidden;
+
+    @media (min-width: 768px) {
+        gap: 1rem;
+    }
 }
 
 input {
@@ -159,6 +172,9 @@ input {
     padding: .5rem;
     border: 5px solid var(--primary);
     border-radius: 1rem;
+    &[disabled] {
+        background: var(--bg-secondary);
+    }
 }
 
 #wp-icon {
