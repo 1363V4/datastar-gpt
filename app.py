@@ -73,42 +73,42 @@ def add_to_conversation(chat_id, role, content):
             'character': session.get('char', 'ceo')
         }
         chats_table.insert(chat)
-    
+
     messages = chat['messages']
     messages.append({"role": role, "content": content})
     chats_table.update({'messages': messages}, where('id') == chat_id)
     return messages
 
 def main_view(conversation, status, char):
-    if status == "ready": 
+    if status == "ready":
         chatbar = f'''
 <div id="chatbar" class="gc">
     <img id="wp-icon" src="/static/img/{char}.png"
-    data-on-click="$_switch=1">
-    <form data-on-submit="@post('/message', {{contentType: 'form'}})">
-        <input id="chatbar-input" data-on-keydown="playShrink()" name="question" placeholder="Speak to me!" autocomplete="off"/>
+    data-on:click="$_switch=1">
+    <form data-on:submit="@post('/message', {{contentType: 'form'}})">
+        <input id="chatbar-input" data-on:keydown="playShrink()" name="question" placeholder="Speak to me!" autocomplete="off"/>
     </form>
 </div>
-        ''' 
+        '''
     else:
         chatbar = f'''
 <div id="chatbar" class="gc">
     <img id="wp-icon" src="/static/img/{char}.png"
-    data-on-load='playRotate()'>
+    data-init='playRotate()'>
     <form>
         <input id="chatbar-input" disabled autocomplete="off"/>
     </form>
 </div>
-        '''         
-    
+        '''
+
     messages = []
     for message in conversation:
         messages.append(f"<div {message['role']}>{markdown2.markdown(message['content'])}</div>")
-    
+
     char_overlay = f'''
-<div id="char-overlay" data-show="$_switch" data-on-click="$_switch = 0">
+<div id="char-overlay" data-show="$_switch" data-on:click="$_switch = 0">
     <div class="char-grid gc">
-        {''.join(f'<img src="/static/img/{char}.png" data-on-click="@post(\'/switch/{char}\')">' for char in instructions)}
+        {''.join(f'<img src="/static/img/{char}.png" data-on:click="@post(\'/switch/{char}\')">' for char in instructions)}
     </div>
 </div>
     '''
@@ -118,7 +118,7 @@ def main_view(conversation, status, char):
     {char_overlay}
     <div
     id="answer"
-    {"data-on-load='answer.scrollTop = answer.scrollHeight /* " + str(randint(1000, 9999)) + " */'" if status == "running" else ""}>
+    {"data-init='answer.scrollTop = answer.scrollHeight /* " + str(randint(1000, 9999)) + " */'" if status == "running" else ""}>
         {''.join(messages)}
     </div>
     {chatbar}
@@ -132,16 +132,16 @@ async def ask_gpt(question, chat_id):
         "Authorization": parameters.key,
         "Content-Type": "application/json"
     }
-    
+
     conversation = add_to_conversation(chat_id, "user", question)
-    
+
     data = {
         "messages": conversation,
         "model": parameters.model,
         "temperature": parameters.temperature,
         "stream": True
     }
-    
+
     async with httpx.AsyncClient() as client:
         async with client.stream('POST', parameters.url, headers=headers, json=data) as response:
             if response.status_code == 200:
@@ -195,7 +195,7 @@ async def post_message():
         yield SSE.patch_elements(main_view(get_conversation_history(chat_id), "running", current_char))
         yield SSE.execute_script("answer.scrollTop = answer.scrollHeight")
         await asyncio.sleep(.01)
-    
+
     yield SSE.patch_elements(main_view(get_conversation_history(chat_id), "ready", current_char))
 
 @app.post("/switch/<char>")
